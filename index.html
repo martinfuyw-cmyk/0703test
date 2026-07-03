@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>專業甘特圖生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        /* === 左側輸入區域 === */
+        .input-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            height: fit-content;
+            position: sticky;
+            top: 30px;
+        }
+
+        .input-panel h2 {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #333;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 11px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .task-list {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .task-item {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .task-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .task-item-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .task-item-dates {
+            color: #999;
+            font-size: 11px;
+        }
+
+        .task-item-delete {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-left: 8px;
+            transition: all 0.2s;
+        }
+
+        .task-item-delete:hover {
+            background: #ff5252;
+        }
+
+        /* === 右側甘特圖區域 === */
+        .gantt-panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gantt-toolbar {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+            border-bottom: 1px solid #e0e0e0;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .zoom-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .zoom-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .zoom-btn:hover {
+            background: #f5f5f5;
+        }
+
+        .zoom-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 6px;
+        }
+
+        .sort-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .sort-btn:hover {
+            background: #f5f5f5;
+        }
+
+        .gantt-container {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            position: relative;
+            background: white;
+        }
+
+        .gantt-left {
+            min-width: 250px;
+            border-right: 2px solid #e0e0e0;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+
+        .gantt-left-header {
+            padding: 12px;
+            border-bottom: 2px solid #e0e0e0;
+            font-weight: 600;
+            font-size: 13px;
+            color: #333;
+            position: sticky;
+            top: 0;
+            background: #f0f0f0;
+            z-index: 10;
+        }
+
+        .gantt-row {
+            display: flex;
+            height: 60px;
+            border-bottom: 1px solid #f0f0f0;
+            align-items: center;
+        }
+
+        .gantt-row:hover {
+            background: #f9f9f9;
+        }
+
+        .gantt-task-label {
+            padding: 0 12px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .gantt-task-name {
+            font-weight: 600;
+            font-size: 13px;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .gantt-task-members {
+            font-size: 11px;
+            color: #999;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 4px;
+        }
+
+        .gantt-right {
+            flex: 1;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .gantt-timeline-header {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+            position: sticky;
+            top: 0;
+            z-index: 9;
+            background: white;
+        }
+
+        .gantt-date-cell {
+            min-width: 40px;
+            padding: 8px 2px;
+            border-right: 1px solid #e0e0e0;
+            font-size: 11px;
+            text-align: center;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .gantt-timeline-body {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .gantt-timeline-row {
+            display: flex;
+            height: 60px;
+            border-bottom: 1px solid #f0f0f0;
+            align-items: center;
+            position: relative;
+        }
+
+        .gantt-timeline-row:hover {
+            background: #f9f9f9;
+        }
+
+        .gantt-grid-cell {
+            min-width: 40px;
+            height: 100%;
+            border-right: 1px solid #f5f5f5;
+            position: relative;
+        }
+
+        .gantt-grid-cell.today {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .gantt-bar {
+            position: absolute;
+            height: 32px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: 6px;
+            cursor: grab;
+            transition: box-shadow 0.2s, filter 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            user-select: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .gantt-bar:hover {
+            filter: brightness(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 10;
+        }
+
+        .gantt-bar.dragging {
+            cursor: grabbing;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+        }
+
+        .gantt-bar-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            cursor: col-resize;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .gantt-bar-handle.left {
+            left: 0;
+            border-radius: 6px 0 0 6px;
+        }
+
+        .gantt-bar-handle.right {
+            right: 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .gantt-bar-handle:hover {
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .gantt-bar.priority-high {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
+        }
+
+        .gantt-bar.priority-medium {
+            background: linear-gradient(135deg, #ffa500 0%, #ff9500 100%);
+        }
+
+        .gantt-bar.priority-low {
+            background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+        }
+
+        .gantt-bar.priority-default {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* 空狀態 */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: #999;
+            text-align: center;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-hint {
+            font-size: 12px;
+            color: #bbb;
+        }
+
+        /* 響應式 */
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .input-panel {
+                position: relative;
+                top: 0;
+            }
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 1000;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 8px;
+        }
+
+        /* 動畫 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .gantt-bar {
+            animation: fadeIn 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 專業甘特圖生成器</h1>
+            <p>簡單直觀的項目時間軸管理工具</p>
+        </div>
+
+        <div class="main-content">
+            <!-- 左側輸入面板 -->
+            <div class="input-panel">
+                <h2>➕ 新增任務</h2>
+
+                <div class="input-group">
+                    <label>主題</label>
+                    <input type="text" id="taskTitle" placeholder="例如：產品設計">
+                </div>
+
+                <div class="input-group">
+                    <label>開始日期</label>
+                    <input type="date" id="startDate">
+                </div>
+
+                <div class="input-group">
+                    <label>結束日期</label>
+                    <input type="date" id="endDate">
+                </div>
+
+                <div class="input-group">
+                    <label>參與人員</label>
+                    <input type="text" id="members" placeholder="例如：張三, 李四">
+                </div>
+
+                <div class="input-group">
+                    <label>優先級</label>
+                    <select id="priority">
+                        <option value="default">預設</option>
+                        <option value="high">🔴 高優先級</option>
+                        <option value="medium">🟠 中優先級</option>
+                        <option value="low">🟢 低優先級</option>
+                    </select>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="addTask()">新增任務</button>
+                    <button class="btn btn-secondary" onclick="clearForm()">清空</button>
+                </div>
+
+                <div class="task-list" id="taskList"></div>
+            </div>
+
+            <!-- 右側甘特圖區域 -->
+            <div class="gantt-panel">
+                <div class="gantt-toolbar">
+                    <div class="zoom-controls">
+                        <label style="font-size: 12px; color: #666; margin-right: 8px;">縮放：</label>
+                        <button class="zoom-btn active" onclick="setZoom(40)">日週</button>
+                        <button class="zoom-btn" onclick="setZoom(60)">標準</button>
+                        <button class="zoom-btn" onclick="setZoom(80)">詳細</button>
+                    </div>
+
+                    <div style="flex: 1;"></div>
+
+                    <div class="sort-controls">
+                        <label style="font-size: 12px; color: #666; margin-right: 8px;">排序：</label>
+                        <button class="sort-btn" onclick="sortTasks('date')">📅 按日期</button>
+                        <button class="sort-btn" onclick="sortTasks('priority')">⚡ 按優先級</button>
+                        <button class="sort-btn" onclick="sortTasks('name')">🔤 按名稱</button>
+                    </div>
+
+                    <button class="sort-btn" onclick="exportChart()" style="margin-left: 12px;">💾 匯出</button>
+                </div>
+
+                <div class="gantt-container">
+                    <div class="gantt-left">
+                        <div class="gantt-left-header">任務</div>
+                        <div id="ganttLeft"></div>
+                    </div>
+                    <div class="gantt-right">
+                        <div class="gantt-timeline-header" id="timelineHeader"></div>
+                        <div class="gantt-timeline-body" id="timelineBody"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== 數據管理 =====
+        let tasks = [];
+        let zoomLevel = 40; // 像素寬度 per day
+        let draggedBar = null;
+        let dragStartX = 0;
+        let dragStartLeft = 0;
+        let dragMode = null; // 'move', 'resize-left', 'resize-right'
+        let globalMinDate = null;
+        let globalMaxDate = null;
+
+        // 添加任務
+        function addTask() {
+            const title = document.getElementById('taskTitle').value.trim();
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const members = document.getElementById('members').value.trim();
+            const priority = document.getElementById('priority').value;
+
+            if (!title || !startDate || !endDate) {
+                alert('請填寫必要欄位：主題、開始時間、結束時間');
+                return;
+            }
+
+            if (new Date(startDate) > new Date(endDate)) {
+                alert('開始日期不能晚於結束日期');
+                return;
+            }
+
+            tasks.push({
+                id: Date.now(),
+                title,
+                startDate,
+                endDate,
+                members,
+                priority
+            });
+
+            clearForm();
+            updateChart();
+            renderTaskList();
+        }
+
+        // 清空表單
+        function clearForm() {
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('members').value = '';
+            document.getElementById('priority').value = 'default';
+        }
+
+        // 刪除任務
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            updateChart();
+            renderTaskList();
+        }
+
+        // 獲取全局日期範圍
+        function getDateRange() {
+            if (tasks.length === 0) {
+                const today = new Date();
+                return {
+                    min: new Date(today),
+                    max: new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
+                };
+            }
+
+            let minDate = new Date(tasks[0].startDate);
+            let maxDate = new Date(tasks[0].endDate);
+
+            tasks.forEach(task => {
+                const start = new Date(task.startDate);
+                const end = new Date(task.endDate);
+                if (start < minDate) minDate = start;
+                if (end > maxDate) maxDate = end;
+            });
+
+            // 前後各加3天
+            minDate.setDate(minDate.getDate() - 3);
+            maxDate.setDate(maxDate.getDate() + 3);
+
+            return { min: minDate, max: maxDate };
+        }
+
+        // 計算日期差
+        function daysDifference(date1, date2) {
+            const oneDay = 24 * 60 * 60 * 1000;
+            return Math.ceil((date2 - date1) / oneDay);
+        }
+
+        // 格式化日期
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+        }
+
+        // 設置縮放級別
+        function setZoom(level) {
+            zoomLevel = level;
+            document.querySelectorAll('.zoom-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            updateChart();
+        }
+
+        // 排序任務
+        function sortTasks(type) {
+            if (type === 'date') {
+                tasks.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+            } else if (type === 'priority') {
+                const priorityOrder = { high: 0, medium: 1, low: 2, default: 3 };
+                tasks.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+            } else if (type === 'name') {
+                tasks.sort((a, b) => a.title.localeCompare(b.title));
+            }
+            updateChart();
+        }
+
+        // 更新甘特圖
+        function updateChart() {
+            if (tasks.length === 0) {
+                showEmptyState();
+                return;
+            }
+
+            const { min, max } = getDateRange();
+            globalMinDate = min;
+            globalMaxDate = max;
+
+            renderTimeline(min, max);
+            renderGanttBars(min, max);
+            renderTaskList();
+        }
+
+        // 渲染時間軸頭部
+        function renderTimeline(minDate, maxDate) {
+            const header = document.getElementById('timelineHeader');
+            header.innerHTML = '';
+
+            const currentDate = new Date(minDate);
+            currentDate.setHours(0, 0, 0, 0);
+
+            while (currentDate <= maxDate) {
+                const cell = document.createElement('div');
+                cell.className = 'gantt-date-cell';
+
+                const dayOfWeek = currentDate.getDay();
+                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                if (isWeekend) {
+                    cell.style.background = '#f5f5f5';
+                }
+
+                cell.textContent = formatDate(currentDate.toISOString().split('T')[0]);
+                cell.style.minWidth = zoomLevel + 'px';
+                header.appendChild(cell);
+
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+        }
+
+        // 渲染左側任務列表
+        function renderTaskList() {
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+
+            tasks.forEach(task => {
+                const item = document.createElement('div');
+                item.className = 'task-item';
+
+                const info = document.createElement('div');
+                info.className = 'task-item-info';
+
+                const title = document.createElement('div');
+                title.className = 'task-item-title';
+                title.textContent = task.title;
+
+                const dates = document.createElement('div');
+                dates.className = 'task-item-dates';
+                dates.textContent = `${formatDate(task.startDate)} ~ ${formatDate(task.endDate)}`;
+
+                info.appendChild(title);
+                info.appendChild(dates);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'task-item-delete';
+                deleteBtn.textContent = '刪除';
+                deleteBtn.onclick = () => deleteTask(task.id);
+
+                item.appendChild(info);
+                item.appendChild(deleteBtn);
+                taskList.appendChild(item);
+            });
+        }
+
+        // 渲染甘特條
+        function renderGanttBars(minDate, maxDate) {
+            const ganttLeft = document.getElementById('ganttLeft');
+            const timelineBody = document.getElementById('timelineBody');
+
+            ganttLeft.innerHTML = '';
+            timelineBody.innerHTML = '';
+
+            tasks.forEach(task => {
+                // 左側任務標籤
+                const leftRow = document.createElement('div');
+                leftRow.className = 'gantt-row';
+
+                const label = document.createElement('div');
+                label.className = 'gantt-task-label';
+
+                const name = document.createElement('div');
+                name.className = 'gantt-task-name';
+                name.textContent = task.title;
+
+                const members = document.createElement('div');
+                members.className = 'gantt-task-members';
+                members.textContent = task.members || '未指派';
+
+                label.appendChild(name);
+                label.appendChild(members);
+                leftRow.appendChild(label);
+                ganttLeft.appendChild(leftRow);
+
+                // 右側時間軸
+                const timelineRow = document.createElement('div');
+                timelineRow.className = 'gantt-timeline-row';
+                timelineRow.id = `timeline-${task.id}`;
+
+                const currentDate = new Date(minDate);
+                currentDate.setHours(0, 0, 0, 0);
+
+                while (currentDate <= maxDate) {
+                    const cell = document.createElement('div');
+                    cell.className = 'gantt-grid-cell';
+
+                    // 標記今天
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    if (currentDate.getTime() === today.getTime()) {
+                        cell.classList.add('today');
+                    }
+
+                    cell.style.minWidth = zoomLevel + 'px';
+                    timelineRow.appendChild(cell);
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+
+                // 任務條形
+                const bar = createGanttBar(task, minDate);
+                timelineRow.appendChild(bar);
+
+                timelineBody.appendChild(timelineRow);
+            });
+        }
+
+        // 創建甘特條
+        function createGanttBar(task, minDate) {
+            const startDate = new Date(task.startDate);
+            startDate.setHours(0, 0, 0, 0);
+            const endDate = new Date(task.endDate);
+            endDate.setHours(0, 0, 0, 0);
+
+            const daysFromMin = daysDifference(minDate, startDate);
+            const duration = daysDifference(startDate, endDate) + 1;
+
+            const bar = document.createElement('div');
+            bar.className = `gantt-bar priority-${task.priority}`;
+            bar.id = `bar-${task.id}`;
+            bar.style.left = (daysFromMin * zoomLevel) + 'px';
+            bar.style.width = (duration * zoomLevel) + 'px';
+            bar.textContent = task.title;
+
+            // 添加拖拽句柄
+            const leftHandle = document.createElement('div');
+            leftHandle.className = 'gantt-bar-handle left';
+            bar.appendChild(leftHandle);
+
+            const rightHandle = document.createElement('div');
+            rightHandle.className = 'gantt-bar-handle right';
+            bar.appendChild(rightHandle);
+
+            // 滑鼠事件
+            bar.addEventListener('mousedown', (e) => {
+                if (e.target === leftHandle) {
+                    dragMode = 'resize-left';
+                } else if (e.target === rightHandle) {
+                    dragMode = 'resize-right';
+                } else {
+                    dragMode = 'move';
+                }
+
+                draggedBar = bar;
+                dragStartX = e.clientX;
+                dragStartLeft = bar.offsetLeft;
+                bar.classList.add('dragging');
+
+                document.addEventListener('mousemove', onDrag);
+                document.addEventListener('mouseup', onDragEnd);
+            });
+
+            return bar;
+        }
+
+        // 拖拽事件
+        function onDrag(e) {
+            if (!draggedBar || !dragMode) return;
+
+            const deltaX = e.clientX - dragStartX;
+            const deltaPixels = Math.round(deltaX / zoomLevel) * zoomLevel;
+
+            const taskId = parseInt(draggedBar.id.split('-')[1]);
+            const task = tasks.find(t => t.id === taskId);
+
+            if (dragMode === 'move') {
+                const newLeft = dragStartLeft + deltaPixels;
+                const daysDelta = Math.round(deltaPixels / zoomLevel);
+
+                const startDate = new Date(task.startDate);
+                const endDate = new Date(task.endDate);
+
+                startDate.setDate(startDate.getDate() + daysDelta);
+                endDate.setDate(endDate.getDate() + daysDelta);
+
+                draggedBar.style.left = newLeft + 'px';
+            } else if (dragMode === 'resize-left') {
+                const newLeft = dragStartLeft + deltaPixels;
+                const oldWidth = draggedBar.offsetWidth;
+                const daysDelta = Math.round(deltaPixels / zoomLevel);
+
+                const startDate = new Date(task.startDate);
+                startDate.setDate(startDate.getDate() + daysDelta);
+
+                draggedBar.style.left = newLeft + 'px';
+                draggedBar.style.width = Math.max(zoomLevel, oldWidth - deltaPixels) + 'px';
+            } else if (dragMode === 'resize-right') {
+                const oldWidth = draggedBar.offsetWidth;
+                const daysDelta = Math.round(deltaPixels / zoomLevel);
+
+                const endDate = new Date(task.endDate);
+                endDate.setDate(endDate.getDate() + daysDelta);
+
+                draggedBar.style.width = Math.max(zoomLevel, oldWidth + deltaPixels) + 'px';
+            }
+        }
+
+        // 拖拽結束
+        function onDragEnd(e) {
+            if (!draggedBar || !dragMode) return;
+
+            const deltaX = e.clientX - dragStartX;
+            const daysDelta = Math.round(deltaX / zoomLevel);
+
+            const taskId = parseInt(draggedBar.id.split('-')[1]);
+            const task = tasks.find(t => t.id === taskId);
+
+            if (dragMode === 'move' && daysDelta !== 0) {
+                const startDate = new Date(task.startDate);
+                const endDate = new Date(task.endDate);
+
+                startDate.setDate(startDate.getDate() + daysDelta);
+                endDate.setDate(endDate.getDate() + daysDelta);
+
+                task.startDate = startDate.toISOString().split('T')[0];
+                task.endDate = endDate.toISOString().split('T')[0];
+            } else if (dragMode === 'resize-left' && daysDelta !== 0) {
+                const startDate = new Date(task.startDate);
+                startDate.setDate(startDate.getDate() + daysDelta);
+
+                if (startDate < new Date(task.endDate)) {
+                    task.startDate = startDate.toISOString().split('T')[0];
+                }
+            } else if (dragMode === 'resize-right' && daysDelta !== 0) {
+                const endDate = new Date(task.endDate);
+                endDate.setDate(endDate.getDate() + daysDelta);
+
+                if (endDate > new Date(task.startDate)) {
+                    task.endDate = endDate.toISOString().split('T')[0];
+                }
+            }
+
+            draggedBar.classList.remove('dragging');
+            draggedBar = null;
+            dragMode = null;
+
+            document.removeEventListener('mousemove', onDrag);
+            document.removeEventListener('mouseup', onDragEnd);
+
+            updateChart();
+        }
+
+        // 空狀態
+        function showEmptyState() {
+            document.getElementById('ganttLeft').innerHTML = '';
+            document.getElementById('timelineBody').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📭</div>
+                    <div class="empty-state-text">還沒有任務</div>
+                    <div class="empty-state-hint">在左側新增你的第一個任務吧！</div>
+                </div>
+            `;
+            document.getElementById('timelineHeader').innerHTML = '';
+        }
+
+        // 匯出功能
+        function exportChart() {
+            const html = document.documentElement.outerHTML;
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `gantt-chart-${new Date().toISOString().split('T')[0]}.html`;
+            link.click();
+        }
+
+        // 初始化
+        updateChart();
+
+        // 支持按 Enter 添加任務
+        document.getElementById('members').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
+    </script>
+</body>
+</html>
